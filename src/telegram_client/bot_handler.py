@@ -1,9 +1,9 @@
 import datetime
-from zoneinfo import ZoneInfo
+import re
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes  
 from telegram_client.utils import correct_email, greetings_by_time
-
+from database import db_helper
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
@@ -38,15 +38,29 @@ async def handle_register(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if correct_email(user_message):
             context.user_data['email'] = user_message
             context.user_data['register_step'] = 2
-            await update.message.reply_text("Введіть пароль:")
+
+            await update.message.reply_text("https://support.google.com/accounts/answer/185833?hl=uk")
+            await update.message.reply_text("⬆ Створіть пароль для малозахищених програм та наділшість мені ⬆")
         else: 
             await update.message.reply_text("Невірний формат почти, спробуйте ще раз:")
     elif step == 2:
-        context.user_data['password'] = update.message.text
-        context.user_data['register_step'] = 3
-        await update.message.reply_text("https://support.google.com/accounts/answer/185833?hl=uk")
-        await update.message.reply_text("⬆ Створіть пароль для малозахищених програм ⬆")
-    elif step == 3:
-        context.user_data['program_password'] = update.message.text
-        await update.message.reply_text("Введіть пароль який створили:")    
+        
+        tg_user_id = update.effective_user.id 
+        context.user_data['tg_user_id'] = tg_user_id
+
+        password_application = re.sub(r"\s+", "", update.message.text)
+        context.user_data['password_application'] = password_application
+
+        await update.message.reply_text("Зберігаю дані ♻") 
+
+        is_active_default = False
+        if not await db_helper.check_user(tg_user_id):
+            await db_helper.register_user(context.user_data['tg_user_id'], context.user_data['email'], context.user_data['password_application'], is_active_default)
+            await update.message.reply_text("Готово✅ Розпочинаємо співпрацю ⏭")
+            await db_helper.disconnect()
+        elif await db_helper.check_user(tg_user_id):
+            await update.message.reply_text("Ви вже зареєстровані❗")   
+
+      
+      
 
