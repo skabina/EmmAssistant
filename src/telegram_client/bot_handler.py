@@ -1,21 +1,28 @@
 import datetime
 import re
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes  
 from telegram_client.utils import correct_email, greetings_by_time
 from database import db_helper
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
+    tg_user_id = update.effective_user.id 
     current_time = datetime.datetime.now().time()
-    await update.message.reply_text(greetings_by_time(current_time))
 
-    keyboard = [
-        [InlineKeyboardButton("Зареєструватися", callback_data='register_step')],
-        [InlineKeyboardButton("Ввійти", callback_data='login_handle')],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("Щоб продовжити виберіть кнопку.", reply_markup=reply_markup)
+    if await db_helper.check_user(tg_user_id):
+            await update.message.reply_text(greetings_by_time(current_time)) 
+
+            #Жоскі фічі   
+    elif not await db_helper.check_user(tg_user_id):         
+        
+        await update.message.reply_text(greetings_by_time(current_time))
+
+        keyboard = [    
+            [InlineKeyboardButton("Зареєструватися", callback_data='register_step')],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text("Щоб продовжити виберіть кнопку.", reply_markup=reply_markup)
     
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -44,7 +51,6 @@ async def handle_register(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         else: 
             await update.message.reply_text("Невірний формат почти, спробуйте ще раз:")
     elif step == 2:
-        
         tg_user_id = update.effective_user.id 
         context.user_data['tg_user_id'] = tg_user_id
 
@@ -57,10 +63,33 @@ async def handle_register(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if not await db_helper.check_user(tg_user_id):
             await db_helper.register_user(context.user_data['tg_user_id'], context.user_data['email'], context.user_data['password_application'], is_active_default)
             await update.message.reply_text("Готово✅ Розпочинаємо співпрацю ⏭")
+            date_user = await db_helper.get_user(tg_user_id)
+            await update.message.reply_text("Ось ваші дані:\nВаш id: {date_user[tg_user_id]}\nВаша email")
             await db_helper.disconnect()
-        elif await db_helper.check_user(tg_user_id):
-            await update.message.reply_text("Ви вже зареєстровані❗")   
+         
 
-      
-      
+async def all_date_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        tg_user_id = update.effective_user.id 
+        date_user = await db_helper.get_user(tg_user_id)
+
+        message = f"""Ось ваші дані:
+        Telegram ID: {date_user['tg_user_id']}
+        📧Email: {date_user['email']}
+        🔑Пароль: || {date_user['password_application']} ||
+        💌Повідомлення про новий лист: {'✅' if date_user['is_active'] else '❌'}
+        """
+        message = message.replace(".", "\.")  
+        await update.message.reply_text(message,parse_mode="MarkdownV2")
+        
+                
+async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [KeyboardButton("📬 Мої дані"), KeyboardButton("⚙ Налаштування")]
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+    await update.message.reply_text("Оберіть опцію:", reply_markup=reply_markup)                
+               
+   
+
 

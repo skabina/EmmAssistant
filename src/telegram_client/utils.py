@@ -27,5 +27,7 @@ def greetings_by_time(times_message: datetime) -> str:
         return BOT_PHRASES["time_based"]["evening"]
     elif twenty_one_step <= times_message or times_message < six_step:
         return BOT_PHRASES["time_based"]["night"]
+    
+
 
    
