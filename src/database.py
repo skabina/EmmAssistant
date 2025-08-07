@@ -22,6 +22,7 @@ class DataBaseHelper:
         await self.connect()
         query = "SELECT EXISTS (SELECT 1 FROM users WHERE tg_user_id = $1)"
         result = await self.connection.fetchval(query, tg_user_id)
+        await db_helper.disconnect()
         return result
     
     async def register_user(self,tg_user_id: int, email: str, password_application: str, is_active: bool):
@@ -31,6 +32,23 @@ class DataBaseHelper:
         """
         await self.connection.execute(query, tg_user_id, email, password_application, is_active)
         print("Сreate user")
+    async def get_user(self, tg_user_id: int):
+        await self.connect()
+        query = """SELECT * FROM users 
+                WHERE tg_user_id = $1
+        """
+        result = await self.connection.fetchrow(query, tg_user_id)
+        await db_helper.disconnect()
+        return result
+
+    async def set_date(self, tg_user_id: int, email: str, password_application: str, is_active: bool ):
+        await self.connect()
+        query = """SELECT * FROM users 
+                WHERE tg_user_id = $1
+        """
+        result = await self.connection.fetchrow(query, tg_user_id)
+        await db_helper.disconnect()
+        return result
 
 
 
