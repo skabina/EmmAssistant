@@ -2,13 +2,12 @@ from datetime import time
 import datetime
 import json
 from pathlib import Path
+import random
 import re
-
 
 def correct_email(email: str) -> bool:
     regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
     return bool(re.fullmatch(regex, email))
-
 
 def greetings_by_time(times_message: datetime) -> str:
     twelve_step = time(12, 0)
@@ -27,7 +26,15 @@ def greetings_by_time(times_message: datetime) -> str:
         return BOT_PHRASES["time_based"]["evening"]
     elif twenty_one_step <= times_message or times_message < six_step:
         return BOT_PHRASES["time_based"]["night"]
-    
+
+def escape_md(text):
+    return re.sub(r'([_*\[\]()~`>#+=|{}.!\-])', r'\\\1', text)
+
+def random_answer_errors() -> str:
+    with open(Path("src/resources/phrases.json"), "r", encoding="utf-8") as f:
+        BOT_PHRASES = json.load(f)
+
+    random_key_errors = str(random.randint(1, 4))
+    return BOT_PHRASES["errors"][random_key_errors]
 
 
-   
